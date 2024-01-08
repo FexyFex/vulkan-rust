@@ -1,26 +1,31 @@
 use std::ffi::{c_void, CStr};
-use log::{debug, error, trace, warn};
 use vulkanalia::vk;
 
 
-pub extern "system" fn debug_callback(
-    severity: vk::DebugUtilsMessageSeverityFlagsEXT,
-    type_: vk::DebugUtilsMessageTypeFlagsEXT,
+pub unsafe extern "system" fn debug_callback(
+    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    message_type: vk::DebugUtilsMessageTypeFlagsEXT,
     data: *const vk::DebugUtilsMessengerCallbackDataEXT,
-    _: *mut c_void
+    _p_user_data: *mut c_void,
 ) -> vk::Bool32 {
-    let data = unsafe { *data };
-    let message = unsafe { CStr::from_ptr(data.message) }.to_string_lossy();
 
-    if severity >= vk::DebugUtilsMessageSeverityFlagsEXT::ERROR {
-        error!("({:?}) {}", type_, message);
-    } else if severity >= vk::DebugUtilsMessageSeverityFlagsEXT::WARNING {
-        warn!("({:?}) {}", type_, message);
-    } else if severity >= vk::DebugUtilsMessageSeverityFlagsEXT::INFO {
-        debug!("({:?}) {}", type_, message);
-    } else {
-        trace!("({:?}) {}", type_, message);
-    }
+    let severity = match message_severity {
+        vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE => "[Verbose]",
+        vk::DebugUtilsMessageSeverityFlagsEXT::WARNING => "[Warning]",
+        vk::DebugUtilsMessageSeverityFlagsEXT::ERROR => "[Error]",
+        vk::DebugUtilsMessageSeverityFlagsEXT::INFO => "[Info]",
+        _ => "[Unknown]"
+    };
+
+    let types = match message_type {
+        vk::DebugUtilsMessageTypeFlagsEXT::GENERAL => "[General]",
+        vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE => "[Performance]",
+        vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION => "[Validation]",
+        _ => "[Unknown]"
+    };
+
+    let message = CStr::from_ptr((*data).message);
+    println!("[Debug]{}{}{:?}", severity, types, message);
 
     vk::FALSE
 }
