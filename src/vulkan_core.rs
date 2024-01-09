@@ -10,6 +10,13 @@ use winit::window::Window;
 use crate::vulkan_core::vulkan_debug::debug_callback;
 
 
+struct QueueFamilyIndices {
+    graphics: u32,
+    compute: u32,
+    present: u32
+}
+
+
 pub unsafe fn create_instance(window: &Window, entry: &Entry) -> Result<Instance> {
     const VALIDATION_LAYER: vk::ExtensionName = vk::ExtensionName::from_bytes(b"VK_LAYER_KHRONOS_validation");
 
@@ -52,5 +59,22 @@ pub unsafe fn create_instance(window: &Window, entry: &Entry) -> Result<Instance
     let _messenger = instance.create_debug_utils_messenger_ext(&debug_info, None)?;
 
     Ok(instance)
+}
+
+
+pub unsafe fn create_physical_device(instance: &Instance) -> Result<vk::PhysicalDevice> {
+    let available_devices = instance.enumerate_physical_devices()?;
+
+    // Very arbitrary selection process. I really don't want to implement it correctly right now...
+    let physical_device = available_devices.iter().max_by_key(|p| {
+        let properties = instance.get_physical_device_properties(**p);
+        properties.api_version
+    })?;
+
+    let features = instance.get_physical_device_features(*physical_device);
+    let mut features2 = vk::PhysicalDeviceFeatures2::builder().build();
+    instance.get_physical_device_features2(*physical_device, &mut features2);
+
+
 }
 
